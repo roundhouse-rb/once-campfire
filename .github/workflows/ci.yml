@@ -48,6 +48,45 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop
 
+  # Fork only: Rails 8.2 compiles HTML templates through Herb in strict mode. Until
+  # this branch's Rails includes Herb, check that every template would compile.
+  # Once it does, replace this job with `bin/rails herb:check`.
+  herb:
+    name: Herb compile check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
+        with:
+          ruby-version: .ruby-version
+
+      - name: Install Herb
+        run: gem install herb --version 0.11.0 --no-document
+
+      - name: Compile every HTML template through Herb
+        run: |
+          ruby -rherb -rherb/engine - <<'RUBY'
+            templates = Dir["app/views/**/*.html.erb"].sort
+            failures = templates.filter_map do |path|
+              Herb::Engine.new(File.read(path), filename: path)
+              nil
+            rescue Herb::Engine::CompilationError => error
+              message = error.message.lines.first.strip
+              line = message[/\A#{Regexp.escape(path)}:(\d+):/, 1] || 1
+              puts "::error file=#{path},line=#{line}::#{message.sub(/\A#{Regexp.escape(path)}:\d+:\d+: /, "")}"
+              path
+            end
+            puts "#{templates.size} templates, #{failures.size} failed to compile through Herb"
+            exit failures.empty?
+          RUBY
+
   lint-actions:
     name: GitHub Actions audit
     runs-on: ubuntu-latest
