@@ -5,11 +5,12 @@ class WebhookTest < ActiveSupport::TestCase
     message = messages(:first)
     message_path = Rails.application.routes.url_helpers.room_at_message_path(message.room, message)
     bot_messages_path = Rails.application.routes.url_helpers.room_bot_messages_path(message.room, users(:bender).bot_key)
+    bot_api_path = Rails.application.routes.url_helpers.room_bot_api_messages_path(message.room)
 
     WebMock.stub_request(:post, webhooks(:bender).url).
       with(body: hash_including(
         user: { id: message.creator.id, name: message.creator.name },
-        room: { id: message.room.id, name: message.room.name, path: bot_messages_path },
+        room: { id: message.room.id, name: message.room.name, path: bot_messages_path, api_path: bot_api_path, bot_key: users(:bender).bot_key },
         message: { id: message.id, body: { html: "First post!", plain: "First post!" }, path: message_path },
       ))
 
@@ -41,7 +42,7 @@ class WebhookTest < ActiveSupport::TestCase
 
   test "delivery with error reply" do
     assert_no_difference -> { Message.count } do
-      WebMock.stub_request(:post, webhooks(:bender).url).to_return(status: 500, body: "<h1>Internal Error!</h1>", headers: { "Content-Type" => "text/html" })
+      WebMock.stub_request(:post, webhooks(:bender).url).to_return(status: 500, body: "Internal Error!", headers: {})
       response = webhooks(:bender).deliver(messages(:first))
     end
   end
