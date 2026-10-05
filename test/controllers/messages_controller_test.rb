@@ -57,6 +57,18 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "creating a message with an image that can't be decoded broadcasts the message to the room" do
+    webp = Vips::Image.new_from_file(file_fixture("moon.jpg").to_s).webpsave_buffer
+    broken = Rack::Test::UploadedFile.new(StringIO.new(webp.byteslice(0, webp.bytesize / 2)), "image/webp", original_filename: "broken.webp")
+
+    post room_messages_url(@room, format: :turbo_stream), params: { message: { attachment: broken, client_message_id: 999 } }
+
+    assert_response :success
+    assert_rendered_turbo_stream_broadcast @room, :messages, action: "append", target: [ @room, :messages ] do
+      assert_select ".message__body a[href*='broken.webp']"
+    end
+  end
+
   test "creating a message broadcasts unread room to each member" do
     memberships(:david_watercooler).present # the poster is in the room
 
