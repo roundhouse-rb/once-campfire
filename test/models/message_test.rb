@@ -81,6 +81,18 @@ class MessageTest < ActiveSupport::TestCase
     end
   end
 
+  test "paged? tells whether a room has more than a page of messages without counting them all" do
+    room = Rooms::Closed.create!(name: "Paging", creator: users(:david))
+    Message.insert_all Array.new(Message::Pagination::PAGE_SIZE) { |i| { room_id: room.id, creator_id: users(:david).id, client_message_id: "paging-#{i}" } }
+
+    assert_no_queries_match(/COUNT/i) do
+      assert_not room.messages.paged?
+
+      Message.insert_all [ { room_id: room.id, creator_id: users(:david).id, client_message_id: "paging-next" } ]
+      assert room.messages.paged?
+    end
+  end
+
   private
     def capture_message_selects(&block)
       statements = []
