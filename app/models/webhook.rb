@@ -41,7 +41,7 @@ class Webhook < ApplicationRecord
     def payload(message)
       {
         user:    { id: message.creator.id, name: message.creator.name },
-        room:    { id: message.room.id, name: message.room.name, path: room_bot_messages_path(message) },
+        room:    { id: message.room.id, name: message.room.name, **room_bot_access(message) },
         message: { id: message.id, body: { html: message.body.body, plain: without_recipient_mentions(message.plain_text_body) }, path: message_path(message) }
       }.to_json
     end
@@ -50,8 +50,12 @@ class Webhook < ApplicationRecord
       Rails.application.routes.url_helpers.room_at_message_path(message.room, message)
     end
 
-    def room_bot_messages_path(message)
-      Rails.application.routes.url_helpers.room_bot_messages_path(message.room, user.bot_key)
+    def room_bot_access(message)
+      {
+        path: Rails.application.routes.url_helpers.room_bot_messages_path(message.room, user.bot_key),
+        api_path: Rails.application.routes.url_helpers.room_bot_api_messages_path(message.room),
+        bot_key: user.bot_key
+      }
     end
 
     def extract_text_from(response)
@@ -63,7 +67,7 @@ class Webhook < ApplicationRecord
     end
 
     def extract_attachment_from(response)
-      if response.code == "200" && response.content_type && mime_type = Mime::Type.lookup(response.content_type)
+      if response.content_type && mime_type = Mime::Type.lookup(response.content_type)
         ActiveStorage::Blob.create_and_upload! \
           io: StringIO.new(response.body), filename: "attachment.#{mime_type.symbol}", content_type: mime_type.to_s
       end
