@@ -6,7 +6,7 @@ class Membership < ApplicationRecord
 
   after_destroy_commit { user.reset_remote_connections }
 
-  enum :involvement, %w[ invisible nothing mentions everything ].index_by(& :itself), prefix: :involved_in
+  enum :involvement, %w[ invisible nothing mentions everything ].index_by(&:itself), prefix: :involved_in
 
   scope :with_ordered_room, -> { includes(:room).joins(:room).order("LOWER(rooms.name)") }
   scope :with_direct_rooms, -> { includes(:room).joins(:room).merge(Room.directs).order(rooms: { updated_at: :desc }) }
