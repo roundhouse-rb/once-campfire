@@ -1,3 +1,13 @@
+> [!NOTE]
+> **This is a fork of [ONCE Campfire](https://github.com/basecamp/once-campfire), not the official repository.**
+> It is not affiliated with or endorsed by Basecamp or 37signals.
+>
+> The `preview` branch is upstream Campfire plus pull requests that have been submitted
+> to [basecamp/once-campfire](https://github.com/basecamp/once-campfire/pulls) but not yet
+> merged, so they can be built, tested and used together while they wait for review. Every
+> change here is meant to go upstream, and leaves this branch once it is merged there.
+> `main` is an unmodified copy of upstream.
+
 # Campfire
 
 Campfire is a web-based chat application. It supports many of the features you'd
