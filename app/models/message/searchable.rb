@@ -16,6 +16,12 @@ module Message::Searchable
     def match_terms(query)
       query.split.map { |word| %("#{word.gsub('"', '""')}") }.join(" ")
     end
+
+    # Orders by the index's rowid, which is the message id, so SQLite walks the full-text index
+    # newest first and stops at the page. Ordering by created_at sorted every match before paging.
+    def last_page_of_matches(size)
+      Message::Pagination::Page.load(reorder("idx.rowid"), :last, size)
+    end
   end
 
   private
