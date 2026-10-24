@@ -1,12 +1,5 @@
 # Native view caches share one byte budget across every database generation.
 class FragmentCache
-  # Only callers that fingerprint every rendered dependency may omit the epoch.
-  ContentKey = Data.define(:digest) do
-    def cache_key
-      digest
-    end
-  end
-
   # Its own class, so cache instrumentation can tell its reads from Rails.cache's.
   class Store < ActiveSupport::Cache::MemoryStore; end
 
